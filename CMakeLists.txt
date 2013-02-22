@@ -112,6 +112,9 @@ FIND_PROGRAM(GOB2_CMD gob2)
 IF(${GOB2_CMD} STREQUAL "GOB2_CMD-NOTFOUND")
     MESSAGE(FATAL_ERROR "gob2 not found, install gob2 please.")
 ENDIF()
+
+FIND_LIBRARY(CCONV_LIBRARY NAMES cconv)
+SET(CCONV_LIBRARIES ${CCONV_LIBRARY})
 ####################################################################
 # Building
 #

@@ -234,6 +234,8 @@ gboolean ibus_chewing_engine_process_key_event(IBusEngine *engine,
 	    chewing_handle_CtrlNum(self->context,kSym);
 //	}else if (kSym==IBUS_v || kSym==IBUS_V){
 //	    chewing_handle_Right(self->context);
+	}else if (kSym==IBUS_semicolon){
+            self->t2s_flag=!(self->t2s_flag); // toggle traditional to simplified flag
 	}else{
 	    result=FALSE;
 	}

@@ -33,6 +33,7 @@ requires 2.0.0
 #include <X11/extensions/XTest.h>
 #include <X11/Xlib.h>
 #include <ctype.h>
+#include <cconv.h>
 #include "ibus-chewing-util.h"
 %}
 
@@ -232,6 +233,9 @@ class IBus:Chewing:Engine from IBus:Engine{
     private guint key_last=0;
     private gchar zhuyin_latest[ZHUYIN_BUFFER_SIZE];
 
+    public guint t2s_flag=0;
+    protected cconv_t conv;
+
     classwide IBusText *chieng_prop_label_chi={g_object_ref_sink(ibus_text_new_from_static_string(_("Chi")))};
     classwide IBusText *chieng_prop_label_eng={g_object_ref_sink(ibus_text_new_from_static_string(_("Eng")))};
     classwide IBusText *alnumSize_prop_label_full={g_object_ref_sink(ibus_text_new_from_static_string(_("Full")))};
@@ -261,6 +265,8 @@ class IBus:Chewing:Engine from IBus:Engine{
 	    ibus_prop_list_append(self->prop_list,self->settings_prop);
 
 	    ibus_chewing_engine_set_status_flag(self,ENGINE_STATUS_INITIALIZED);
+
+            self->conv = cconv_open("UTF8-CN", "UTF8-TW");
 	}
     }
 
@@ -843,11 +849,24 @@ class IBus:Chewing:Engine from IBus:Engine{
     /* commit string */
     protected gboolean commit(self){
 	gchar *commit_string=chewing_commit_String(self->context);
-	G_DEBUG_MSG(2,"[I2] commit() commit:%s", commit_string);
-	IBusText *iText=g_object_ref_sink(ibus_text_new_from_string(commit_string));
+	gchar *out_string=commit_string;
+	if(self->t2s_flag) { 
+		size_t inlen = strlen(commit_string);
+		size_t outlen = inlen*2; 
+		out_string = (gchar*)g_malloc(outlen);
+		gchar *pin;
+		gchar *pout;
+		pin=commit_string;
+		pout=out_string;
+		cconv(self->conv,&pin,&inlen,&pout,&outlen);
+	}
+	G_DEBUG_MSG(2,"[I2] commit() commit:%s", out_string);
+	IBusText *iText=g_object_ref_sink(ibus_text_new_from_string(out_string));
 	ibus_engine_commit_text(IBUS_ENGINE(self),iText);
 	//self->hasCommit = 1;
 	g_object_unref(iText);
+	if(self->t2s_flag)
+		g_free(out_string);
 	chewing_free(commit_string);
 
 	if ((self->_priv->statusFlags & ENGINE_STATUS_FORCE_COMMIT)){
